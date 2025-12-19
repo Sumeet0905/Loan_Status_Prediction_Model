@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Loan Predictor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Predictor - IvyBank</title>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
 
 <div class="wrap">
+    <!-- Header -->
     <header class="header">
         <div class="logo">IB</div>
         <div class="brand-text">
@@ -16,30 +18,33 @@
         </div>
     </header>
 
+    <!-- Card / Form -->
     <div class="card">
+        <!-- Left panel -->
         <div class="left">
             <h2>Find your loan likelihood</h2>
             <p>Enter a few details and get an instant estimate of your approval chance. This tool provides a quick probability score based on historical patterns — for guidance only.</p>
             <div class="illus" aria-hidden="true"></div>
         </div>
 
+        <!-- Right panel -->
         <div class="right">
-            <form class="loan-form" id="loanForm" novalidate>
+            <form id="loanForm" novalidate>
                 <div class="field-row">
                     <div class="field-group" style="flex:1">
                         <label for="gender">Gender</label>
-                        <select id="gender">
-                                <option value="">Select</option>
-                                <option value="1">Male</option>
-                                <option value="0">Female</option>
+                        <select id="gender" required>
+                            <option value="">Select</option>
+                            <option value="1">Male</option>
+                            <option value="0">Female</option>
                         </select>
                     </div>
                     <div class="field-group" style="width:140px">
                         <label for="married">Married</label>
-                        <select id="married">
-                                <option value="">Select</option>
-                                <option value="1">Yes</option>
-                                <option value="0">No</option>
+                        <select id="married" required>
+                            <option value="">Select</option>
+                            <option value="1">Yes</option>
+                            <option value="0">No</option>
                         </select>
                     </div>
                 </div>
@@ -47,25 +52,25 @@
                 <div class="field-row">
                     <div class="field-group" style="flex:1">
                         <label for="education">Education</label>
-                        <select id="education">
-                                <option value="">Select</option>
-                                <option value="1">Graduate</option>
-                                <option value="0">Not Graduate</option>
+                        <select id="education" required>
+                            <option value="">Select</option>
+                            <option value="1">Graduate</option>
+                            <option value="0">Not Graduate</option>
                         </select>
                     </div>
                     <div class="field-group" style="width:140px">
-                        <label for="credit_history">Credit</label>
-                        <select id="credit_history">
-                                <option value="">Select</option>
-                                <option value="1">Good</option>
-                                <option value="0">Bad</option>
+                        <label for="credit_history">Credit History</label>
+                        <select id="credit_history" required>
+                            <option value="">Select</option>
+                            <option value="1">Good</option>
+                            <option value="0">Bad</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="field-group">
                     <label for="loan_amount">Loan Amount</label>
-                    <input type="number" id="loan_amount" placeholder="Enter amount">
+                    <input type="number" id="loan_amount" placeholder="Enter amount" required>
                 </div>
 
                 <div class="actions">
@@ -75,8 +80,8 @@
             </form>
         </div>
     </div>
-    </div>
+</div>
 
-    <script src="/static/script.js"></script>
+<script src="/static/script.js"></script>
 </body>
 </html>
