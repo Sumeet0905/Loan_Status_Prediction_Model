@@ -2,14 +2,14 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
   const resultDiv = document.getElementById("result");
 
   const payload = {
-    gender: parseInt(document.getElementById("gender").value || ""),
-    married: parseInt(document.getElementById("married").value || ""),
-    education: parseInt(document.getElementById("education").value || ""),
-    credit_history: parseInt(document.getElementById("credit_history").value || ""),
-    loan_amount: parseFloat(document.getElementById("loan_amount").value || "")
+    gender: parseInt(document.getElementById("gender").value) || NaN,
+    married: parseInt(document.getElementById("married").value) || NaN,
+    education: parseInt(document.getElementById("education").value) || NaN,
+    credit_history: parseInt(document.getElementById("credit_history").value) || NaN,
+    loan_amount: parseFloat(document.getElementById("loan_amount").value) || NaN
   };
 
-  if (Object.values(payload).some(v => v === null || v === '' || Number.isNaN(v))) {
+  if (Object.values(payload).some(v => Number.isNaN(v))) {
     resultDiv.innerHTML = '<span class="pill rejected">⚠️ Please complete all fields</span>';
     return;
   }
@@ -17,8 +17,10 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
   resultDiv.innerHTML = '<span class="pill">⏳ Predicting...</span>';
 
   try {
-    const resp = await fetch('http://127.0.0.1:5000/predict', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    const resp = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
 
     if (!resp.ok) {
@@ -37,8 +39,7 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
     const approved = percent !== null ? percent >= 50 : (result.result === 'Approved');
 
     const pill = approved ? `<span class="pill approved">✅ ${result.result}</span>` : `<span class="pill rejected">❌ ${result.result}</span>`;
-
-    resultDiv.innerHTML = `${pill}`;
+    resultDiv.innerHTML = pill;
 
     showPopup(percent, result.result, approved, 3000);
 
@@ -48,7 +49,7 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
   }
 });
 
-// Render and animate gauge into target element id. If isOverlay true, include a title and larger percent.
+// Gauge and popup functions remain the same
 function renderGaugeAnimated(percent, targetId, isOverlay=false) {
   const container = document.getElementById(targetId);
   if (!container) return;
@@ -86,7 +87,7 @@ function renderGaugeAnimated(percent, targetId, isOverlay=false) {
   const needle = container.querySelector('.needle');
   const pctText = container.querySelector('.prob-text');
 
-  requestAnimationFrame(()=>{
+  requestAnimationFrame(()=> {
     if(arc){
       arc.style.transition = 'stroke-dashoffset 2s cubic-bezier(.22,.9,.3,1)';
       const targetOffset = Math.round(dashTotal - (displayPercent/100)*dashTotal);
@@ -112,9 +113,7 @@ function renderGaugeAnimated(percent, targetId, isOverlay=false) {
     requestAnimationFrame(tick);
   });
 
-  if (isOverlay) {
-    container.setAttribute('aria-hidden','false');
-  }
+  if (isOverlay) container.setAttribute('aria-hidden','false');
 }
 
 function showPopup(percent, resultLabel, approved, ttl=3000){
@@ -152,7 +151,7 @@ function showPopup(percent, resultLabel, approved, ttl=3000){
   `;
   document.body.appendChild(popup);
   requestAnimationFrame(()=> popup.classList.add('show'));
-  setTimeout(()=>{
+  setTimeout(()=> {
     popup.classList.remove('show');
     setTimeout(()=> popup.remove(), 420);
   }, ttl);
