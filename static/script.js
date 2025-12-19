@@ -1,6 +1,7 @@
 document.getElementById("predictBtn").addEventListener("click", async () => {
   const resultDiv = document.getElementById("result");
 
+  // 1. Capture Inputs
   const payload = {
     gender: parseInt(document.getElementById("gender").value),
     married: parseInt(document.getElementById("married").value),
@@ -9,8 +10,8 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
     loan_amount: parseFloat(document.getElementById("loan_amount").value)
   };
 
-  // Improved validation check
-  if (Object.values(payload).some(v => isNaN(v) || v === null)) {
+  // 2. Validation
+  if (Object.values(payload).some(v => isNaN(v))) {
     resultDiv.innerHTML = '<span class="pill rejected">⚠️ Please complete all fields</span>';
     return;
   }
@@ -18,34 +19,33 @@ document.getElementById("predictBtn").addEventListener("click", async () => {
   resultDiv.innerHTML = '<span class="pill">⏳ Predicting...</span>';
 
   try {
-    // Explicitly point to the Flask backend port
-    const resp = await fetch('http://127.0.0.1:5000/predict', {
+    // Relative path works perfectly on Render
+    const resp = await fetch('/predict', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
     if (!resp.ok) {
-      const txt = await resp.text().catch(()=>'');
-      resultDiv.innerHTML = `<span class="pill rejected">❌ Server Error (${resp.status})</span>`;
-      return;
+      throw new Error(`HTTP error! status: ${resp.status}`);
     }
 
     const result = await resp.json();
+    
     if (result.error) {
       resultDiv.innerHTML = `<span class="pill rejected">❌ ${result.error}</span>`;
       return;
     }
 
-    // Handle results and probability
-    const percent = (typeof result.probability === 'number') ? Math.round(result.probability * 100) : null;
-    const approved = result.result === 'Approved';
-    const pill = approved ? `<span class="pill approved">✅ ${result.result}</span>` : `<span class="pill rejected">❌ ${result.result}</span>`;
+    // 3. UI Update
+    const isApproved = result.result === 'Approved';
+    const pillClass = isApproved ? "approved" : "rejected";
+    const icon = isApproved ? "✅" : "❌";
     
-    resultDiv.innerHTML = pill;
+    resultDiv.innerHTML = `<span class="pill ${pillClass}">${icon} ${result.result}</span>`;
 
   } catch (e) {
-    console.error("Connection error:", e);
-    resultDiv.innerHTML = '<span class="pill rejected">❌ Server not responding. Check your terminal!</span>';
+    console.error("Fetch error:", e);
+    resultDiv.innerHTML = '<span class="pill rejected">❌ Server Unreachable</span>';
   }
 });
