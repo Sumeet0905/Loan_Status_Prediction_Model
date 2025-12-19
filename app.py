@@ -3,12 +3,17 @@ from flask_cors import CORS
 import pickle
 import numpy as np
 import os
+import traceback
 
 app = Flask(__name__)
-
 CORS(app)
 
-model = pickle.load(open("loan_model.pkl", "rb"))
+# Load your trained model
+try:
+    model = pickle.load(open("loan_model.pkl", "rb"))
+except Exception as e:
+    print("Error loading model:", e)
+    model = None
 
 @app.route("/")
 def home():
@@ -16,8 +21,16 @@ def home():
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    if model is None:
+        return jsonify({"error": "Model not loaded"}), 500
+
     data = request.get_json()
-    print('\n/-- /predict received JSON:\n', data)
+    print('\n/predict received JSON:', data)
+
+    required_fields = ["gender", "married", "education", "credit_history", "loan_amount"]
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Missing field: {field}"}), 400
 
     try:
         gender = int(data["gender"])
@@ -28,9 +41,10 @@ def predict():
 
         features = np.array([[gender, married, education, loan_amount, credit_history]], dtype=float)
 
+        # Adjust features if model expects a different number
         padded_note = None
-        expected = getattr(model, 'n_features_in_', None)
-        if expected is not None and expected != features.shape[1]:
+        expected = getattr(model, 'n_features_in_', features.shape[1])
+        if expected != features.shape[1]:
             if expected > features.shape[1]:
                 pad = np.zeros((features.shape[0], expected - features.shape[1]))
                 features = np.hstack([features, pad])
@@ -41,40 +55,32 @@ def predict():
                 padded_note = f"Trimmed input to {expected} features expected by model."
                 print(padded_note)
 
-        try:
-            prediction = model.predict(features)[0]
-        except Exception as e:
-            raise
+        # Predict
+        prediction = model.predict(features)[0]
 
+        # Probability
         probability = None
         try:
             if hasattr(model, "predict_proba"):
                 probability = float(model.predict_proba(features)[0][1])
-            elif hasattr(model, 'decision_function'):
-                score = model.decision_function(features)[0]
-                try:
-                    score = float(score)
-                except Exception:
-                    score = float(np.asarray(score).ravel()[-1])
+            elif hasattr(model, "decision_function"):
+                score = float(model.decision_function(features)[0])
                 probability = 1.0 / (1.0 + np.exp(-score))
         except Exception:
             probability = None
 
-        resp = {
+        response = {
             "result": "Approved" if int(prediction) == 1 else "Rejected",
             "probability": probability
         }
         if padded_note:
-            resp['note'] = padded_note
-        return jsonify(resp)
+            response['note'] = padded_note
+
+        return jsonify(response)
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
 
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
