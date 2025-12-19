@@ -3,60 +3,41 @@ from flask_cors import CORS
 import pickle
 import numpy as np
 import os
-import traceback
 
 app = Flask(__name__)
-# CORS is enabled so you can still test locally while the app is hosted
 CORS(app)
 
-# Load model safely
+# Load model - updated path for deployment safety
 model_path = os.path.join(os.path.dirname(__file__), "loan_model.pkl")
-model = None
-
-try:
-    if os.path.exists(model_path):
-        with open(model_path, "rb") as f:
-            model = pickle.load(f)
-        print("✅ Model loaded successfully.")
-    else:
-        print(f"❌ Error: {model_path} not found!")
-except Exception as e:
-    print(f"❌ Model Loading Error: {e}")
+model = pickle.load(open(model_path, "rb"))
 
 @app.route("/")
 def home():
-    # This serves your index.html file from the 'templates' folder
     return render_template("index.html")
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if model is None:
-        return jsonify({"error": "Model not available on server"}), 500
-        
+    data = request.get_json()
     try:
-        data = request.get_json()
-        
-        # Ensure data is converted to float for the model
-        # Order: Gender, Married, Education, LoanAmount, Credit_History
-        features = np.array([[
-            float(data.get("gender", 0)),
-            float(data.get("married", 0)),
-            float(data.get("education", 0)),
-            float(data.get("loan_amount", 0)),
-            float(data.get("credit_history", 0))
-        ]])
+        gender = int(data["gender"])
+        married = int(data["married"])
+        education = int(data["education"])
+        credit_history = int(data["credit_history"])
+        loan_amount = float(data["loan_amount"])
 
-        # Automatic feature scaling/padding if model expects more columns
-        expected_features = getattr(model, 'n_features_in_', 5)
-        if features.shape[1] < expected_features:
-            padding = np.zeros((1, expected_features - features.shape[1]))
-            features = np.hstack([features, padding])
-        elif features.shape[1] > expected_features:
-            features = features[:, :expected_features]
+        features = np.array([[gender, married, education, loan_amount, credit_history]], dtype=float)
+
+        # Handling feature length mismatch
+        expected = getattr(model, 'n_features_in_', None)
+        if expected is not None and expected != features.shape[1]:
+            if expected > features.shape[1]:
+                pad = np.zeros((features.shape[0], expected - features.shape[1]))
+                features = np.hstack([features, pad])
+            else:
+                features = features[:, :expected]
 
         prediction = model.predict(features)[0]
-        
-        # Calculate Probability
+
         probability = None
         if hasattr(model, "predict_proba"):
             probability = float(model.predict_proba(features)[0][1])
@@ -70,11 +51,11 @@ def predict():
         })
 
     except Exception as e:
-        print("Prediction Logic Error:")
+        import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
-    # Render uses the PORT environment variable
-    port = int(os.environ.get("PORT", 10000))
+    # REQUIRED FOR RENDER: Bind to the PORT environment variable
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
